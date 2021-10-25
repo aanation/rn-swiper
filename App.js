@@ -62,9 +62,7 @@ const initImages = (() => {
 
 const App: () => Node = () => {
   const [images, setImages] = React.useState(initImages);
-  const [currentId, setCurrentId] = React.useState(
-    initImages[initImages.length - 1].id,
-  );
+  const [currentId, setCurrentId] = React.useState(null);
 
   console.log(currentId);
 
