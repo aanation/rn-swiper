@@ -13,6 +13,10 @@ import com.facebook.react.uimanager.LayoutShadowNode
 import com.facebook.react.uimanager.ViewGroupManager
 import java.lang.IllegalArgumentException
 import java.util.stream.Collectors.toMap
+import com.facebook.react.common.MapBuilder
+
+
+
 
 
 class ReactSwiperManager: SimpleViewManager<SwiperView>() {
@@ -24,6 +28,18 @@ class ReactSwiperManager: SimpleViewManager<SwiperView>() {
 
     override fun createViewInstance(context: ThemedReactContext): SwiperView {
         return SwiperView(context)
+    }
+
+    override fun getExportedCustomBubblingEventTypeConstants(): MutableMap<String, Any>? {
+        return MapBuilder.builder<Any, Any>()
+            .put(
+                "swiperIdChange",
+                MapBuilder.of(
+                    "phasedRegistrationNames",
+                    MapBuilder.of("bubbled", "onChange")
+                )
+            )
+            .build() as MutableMap<String, Any>
     }
 
     @ReactProp(name = "images")
@@ -40,7 +56,6 @@ class ReactSwiperManager: SimpleViewManager<SwiperView>() {
         }
 
         view.updateImagesByNewState(images)
-        view.scrollToPosition(images.size - 1)
     }
 
     @ReactProp(name = "currentId")

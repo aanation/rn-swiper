@@ -62,7 +62,11 @@ const initImages = (() => {
 
 const App: () => Node = () => {
   const [images, setImages] = React.useState(initImages);
-  const [currentId, setCurrentId] = React.useState();
+  const [currentId, setCurrentId] = React.useState(
+    initImages[initImages.length - 1].id,
+  );
+
+  console.log(currentId);
 
   const isDarkMode = useColorScheme() === 'dark';
 
@@ -78,6 +82,8 @@ const App: () => Node = () => {
   const addToEnd = () => {
     const newImages = createImages({count: 5, width: 1000, height: 800});
     setImages([...images, ...newImages]);
+    const {id} = newImages[newImages.length - 1];
+    setCurrentId(id);
   };
 
   const toLastItem = () => {
@@ -97,6 +103,7 @@ const App: () => Node = () => {
           <View style={styles.sliderWrap}>
             <AndroidSwiper
               currentId={currentId}
+              onChange={setCurrentId}
               style={styles.slider}
               images={images}
             />

@@ -21,6 +21,13 @@ import androidx.recyclerview.widget.RecyclerView
 import com.facebook.react.views.view.ReactViewGroup
 import com.rnswiper.R
 import java.util.ArrayList
+import com.facebook.react.uimanager.events.RCTEventEmitter
+
+import com.facebook.react.bridge.ReactContext
+
+import com.facebook.react.bridge.WritableMap
+import com.facebook.react.bridge.WritableNativeMap
+
 
 class SwiperView @JvmOverloads constructor(
     context: Context,
@@ -35,10 +42,11 @@ class SwiperView @JvmOverloads constructor(
     )
     private val snapHelper = PagerSnapHelper()
     private var mRecyclerView: RecyclerView? = null
+    private var pendingSlideId: String? = null
+    private var innerSlideId: String? = null
 
     init {
         val inflater: LayoutInflater = LayoutInflater.from(getContext())
-        //inflater.inflate(R.layout.swiper, this)
         mRecyclerView = this
 
         mRecyclerView?.adapter = adapter
@@ -53,6 +61,7 @@ class SwiperView @JvmOverloads constructor(
                 }
             }
         })
+        innerSlideId = getCurrentScrollItemId()
         val lp = FrameLayout.LayoutParams(
             LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT,
@@ -79,15 +88,44 @@ class SwiperView @JvmOverloads constructor(
 
     fun updateImagesByNewState(newImagesState: ArrayList<ImageData>) {
         adapter.setImages(newImagesState)
+        val pSlideId = pendingSlideId ?: return
+        if (pSlideId == innerSlideId) {
+            return
+        }
+        val pos = findPosById(pSlideId) ?: return
+        slideToPos(pos, false)
+        innerSlideId = pSlideId
+        pendingSlideId = null
     }
 
+
     fun setCurrentSlide(id: String) {
-        val images = adapter.getImages()
-        val curr = images.find { it.id == id }
-        if (curr != null) {
-            val index = images.indexOf(curr)
-            setCurrentPosition(index, false)
+        if (id == innerSlideId) {
+            return
         }
+        val pos = findPosById(id)
+        if (pos != null) {
+            slideToPos(pos, false)
+            innerSlideId = id
+            pendingSlideId = null
+        } else {
+            pendingSlideId = id
+        }
+    }
+
+    private fun findPosById(id: String): Int? {
+        val images = adapter.getImages()
+        val curr = images.find { it.id == id } ?: return null
+        return images.indexOf(curr)
+    }
+
+    private fun getCurrentScrollItemId(): String? {
+        val pos =  getCurrentItem()
+        val images = adapter.getImages()
+        if (images.size > 0) {
+            return images[pos].id
+        }
+        return null
     }
 
     private fun getCurrentItem(): Int {
@@ -96,22 +134,28 @@ class SwiperView @JvmOverloads constructor(
     }
 
     private fun onPageChanged(pos: Int) {
-        Log.i("SLIDER", pos.toString())
+        val images = adapter.getImages()
+        if (images.size > 0) {
+            val id = images[pos].id
+            innerSlideId = id
+            makeChangeEvent(id)
+        }
     }
 
-
-
-    private fun setCurrentPosition(position: Int, smooth: Boolean) {
-        /*
-        mRecyclerView?.post(Runnable {
-            Log.i("DIFF_CB", "here")
-            mRecyclerView?.scrollToPosition(position)
-            // Here adapter.getItemCount()== child count
-        })
-        */
+    private fun slideToPos(position: Int, smooth: Boolean) {
         if (smooth) mRecyclerView?.smoothScrollToPosition(position) else mRecyclerView?.scrollToPosition(
             position
         )
+    }
 
+    private fun makeChangeEvent(slideId: String) {
+        val event: WritableMap = WritableNativeMap()
+        event.putString("slideId", slideId)
+        val reactContext = context as ReactContext
+        reactContext.getJSModule(RCTEventEmitter::class.java).receiveEvent(
+            id,
+            "swiperIdChange",
+            event
+        )
     }
 }
