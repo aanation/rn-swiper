@@ -1,5 +1,6 @@
 package com.rnswiper.swiper
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.AttributeSet
 import android.util.Log
@@ -21,7 +22,11 @@ import com.facebook.react.views.view.ReactViewGroup
 import com.rnswiper.R
 import java.util.ArrayList
 
-class SwiperView(context: Context) : RelativeLayout(context) {
+class SwiperView @JvmOverloads constructor(
+    context: Context,
+    attributeSet: AttributeSet? = null,
+    defStyleAttr: Int = 0
+) : RecyclerView(context, attributeSet, defStyleAttr) {
     private val adapter = StateAdapter(context, ArrayList<ImageData>())
     private val layoutManager =  LinearLayoutManager(
         context,
@@ -33,8 +38,8 @@ class SwiperView(context: Context) : RelativeLayout(context) {
 
     init {
         val inflater: LayoutInflater = LayoutInflater.from(getContext())
-        inflater.inflate(R.layout.swiper, this)
-        mRecyclerView = findViewById<RecyclerView>(R.id.list)
+        //inflater.inflate(R.layout.swiper, this)
+        mRecyclerView = this
 
         mRecyclerView?.adapter = adapter
         mRecyclerView?.layoutManager = layoutManager
@@ -53,6 +58,23 @@ class SwiperView(context: Context) : RelativeLayout(context) {
             ViewGroup.LayoutParams.MATCH_PARENT,
         )
         layoutParams = lp
+    }
+
+    private var mRequestedLayout = false
+
+    @SuppressLint("WrongCall")
+    override fun requestLayout() {
+        super.requestLayout()
+        // We need to intercept this method because if we don't our children will never update
+        // Check https://stackoverflow.com/questions/49371866/recyclerview-wont-update-child-until-i-scroll
+        if (!mRequestedLayout) {
+            mRequestedLayout = true
+            post {
+                mRequestedLayout = false
+                layout(left, top, right, bottom)
+                onLayout(false, left, top, right, bottom)
+            }
+        }
     }
 
     fun updateImagesByNewState(newImagesState: ArrayList<ImageData>) {

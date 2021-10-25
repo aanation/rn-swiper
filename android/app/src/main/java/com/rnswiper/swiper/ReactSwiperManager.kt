@@ -40,6 +40,7 @@ class ReactSwiperManager: SimpleViewManager<SwiperView>() {
         }
 
         view.updateImagesByNewState(images)
+        view.scrollToPosition(images.size - 1)
     }
 
     @ReactProp(name = "currentId")
