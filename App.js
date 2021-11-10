@@ -21,7 +21,7 @@ import {
   View,
 } from 'react-native';
 
-import {AndroidSwiper} from './AndroidSwiper';
+import {RnImageSwiper} from './rn-image-swiper';
 import {
   Colors,
   DebugInstructions,
@@ -64,8 +64,6 @@ const App: () => Node = () => {
   const [images, setImages] = React.useState(initImages);
   const [currentId, setCurrentId] = React.useState(null);
 
-  console.log(currentId);
-
   const isDarkMode = useColorScheme() === 'dark';
 
   const backgroundStyle = {
@@ -99,10 +97,9 @@ const App: () => Node = () => {
       <Modal visible style={{width: '100%', height: 900}}>
         <View style={{width: '100%', flexDirection: 'column'}}>
           <View style={styles.sliderWrap}>
-            <AndroidSwiper
+            <RnImageSwiper
               currentId={currentId}
               onChange={setCurrentId}
-              style={styles.slider}
               images={images}
             />
           </View>
