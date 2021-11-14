@@ -97,6 +97,8 @@ export const IosSwiper = ({ onChange, images, currentId }) => {
     }
   })
 
+
+
   const window = calcWindow({ images, currIndex })
   const scrollAfterRender = React.useCallback((p) => {
     const item = p || scrollToItemRef.current
@@ -108,6 +110,12 @@ export const IosSwiper = ({ onChange, images, currentId }) => {
       scrollToItemRef.current = null
     }
   }, [])
+
+  React.useLayoutEffect(() => {
+    setTimeout(() => {
+      scrollAfterRender()
+    }, 30)
+  }, [innerId])
 
   React.useEffect(() => {
     // set initial id
@@ -124,6 +132,11 @@ export const IosSwiper = ({ onChange, images, currentId }) => {
         scrollAfterRender(currItem)
       } else {
         scrollToItemRef.current = currItem
+        /*
+        setTimeout(() => {
+          scrollAfterRender(currItem)
+        }, 200)
+        */
       }
       setInnerId(currentId)
       return
@@ -218,7 +231,7 @@ export const IosSwiper = ({ onChange, images, currentId }) => {
           initialScrollIndex={initialScrollIndex}
           // getItem={(_, index) => images[index]}
           // getItemCount={() => images.length}
-          onViewableItemsChanged={scrollAfterRender}
+          // onViewableItemsChanged={scrollAfterRender}
           getItemLayout={(_, index) => ({
             length: width,
             offset: width * index,
