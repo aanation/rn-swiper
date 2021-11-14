@@ -7,7 +7,7 @@ import {
   Image,
   Dimensions,
 } from 'react-native';
-import {ReactNativeZoomableView} from '@dudigital/react-native-zoomable-view';
+import { ReactNativeZoomableView } from '@dudigital/react-native-zoomable-view';
 
 const DEFAULT_MIN_SCALE = 0.6;
 const DEFAULT_MAX_SCALE = 8;
@@ -28,7 +28,7 @@ const getWindow = (index, images) => {
   return images.slice(index - 1, index + 2);
 };
 
-const calcWindow = ({images, currIndex}) => {
+const calcWindow = ({ images, currIndex }) => {
   const window =
     images.length && currIndex !== -1 ? getWindow(currIndex, images) : [];
   return window;
@@ -42,10 +42,11 @@ const Slide = ({
   setScrollEnabled,
   minScale,
   maxScale,
+  hide = false,
 }) => {
   const zoomableImage = React.useRef(null);
 
-  const handleZoomChanges = (a, b, {zoomLevel}) => {
+  const handleZoomChanges = (a, b, { zoomLevel }) => {
     if (zoomLevel === 1 && !scrollEnabled) {
       setScrollEnabled(true);
       return;
@@ -59,30 +60,32 @@ const Slide = ({
 
   return (
     <View style={style}>
-      <ReactNativeZoomableView
-        ref={zoomableImage}
-        maxZoom={typeof maxScale === 'number' ? maxScale : DEFAULT_MAX_SCALE}
-        minZoom={typeof minScale === 'number' ? minScale : DEFAULT_MIN_SCALE}
-        zoomStep={0.5}
-        initialZoom={1}
-        bindToBorders={true}
-        captureEvent={true}
-        onDoubleTapBefore={handleZoomChanges}
-        onDoubleTapAfter={handleZoomChanges}
-        onShiftingBefore={handleZoomChanges}
-        onShiftingEnd={handleZoomChanges}
-        onZoomBefore={handleZoomChanges}
-        onZoomEnd={handleZoomChanges}
+      {!hide && (
+        <ReactNativeZoomableView
+          ref={zoomableImage}
+          maxZoom={typeof maxScale === 'number' ? maxScale : DEFAULT_MAX_SCALE}
+          minZoom={typeof minScale === 'number' ? minScale : DEFAULT_MIN_SCALE}
+          zoomStep={0.5}
+          initialZoom={1}
+          bindToBorders={true}
+          captureEvent={true}
+          onDoubleTapBefore={handleZoomChanges}
+          onDoubleTapAfter={handleZoomChanges}
+          onShiftingBefore={handleZoomChanges}
+          onShiftingEnd={handleZoomChanges}
+          onZoomBefore={handleZoomChanges}
+          onZoomEnd={handleZoomChanges}
         // onZoomAfter={this.logOutZoomState}
-      >
-        <Image
-          style={{flex: 1, width, height: '100%'}}
-          source={{
-            uri,
-          }}
-          resizeMode="contain"
-        />
-      </ReactNativeZoomableView>
+        >
+          <Image
+            style={{ flex: 1, width, height: '100%' }}
+            source={{
+              uri,
+            }}
+            resizeMode="contain"
+          />
+        </ReactNativeZoomableView>
+      )}
     </View>
   );
 };
@@ -98,6 +101,7 @@ export const IosSwiper = ({
   const [innerId, setInnerId] = React.useState(currentId);
   const [initialIndex, setInitialIndex] = React.useState();
   const scrollToItemRef = React.useRef(null);
+  const [hideBeforeScroll, setHideBeforeScroll] = React.useState(false)
   const imagesList = React.useRef(null);
   const [scrollEnabled, setScrollEnabled] = React.useState(true);
   const layoutReady = width !== null;
@@ -108,8 +112,8 @@ export const IosSwiper = ({
     typeof initialIndex === 'number'
       ? initialIndex
       : currIndex !== -1
-      ? currIndex
-      : undefined;
+        ? currIndex
+        : undefined;
 
   React.useEffect(() => {
     if (
@@ -120,7 +124,7 @@ export const IosSwiper = ({
     }
   });
 
-  const window = calcWindow({images, currIndex});
+  const window = calcWindow({ images, currIndex });
   const scrollAfterRender = React.useCallback(p => {
     const item = p || scrollToItemRef.current;
     if (imagesList.current && item) {
@@ -135,6 +139,7 @@ export const IosSwiper = ({
   React.useLayoutEffect(() => {
     setTimeout(() => {
       scrollAfterRender();
+      setHideBeforeScroll(false)
     }, 30);
   }, [innerId]);
 
@@ -153,11 +158,7 @@ export const IosSwiper = ({
         scrollAfterRender(currItem);
       } else {
         scrollToItemRef.current = currItem;
-        /*
-        setTimeout(() => {
-          scrollAfterRender(currItem)
-        }, 200)
-        */
+        setHideBeforeScroll(true)
       }
       setInnerId(currentId);
       return;
@@ -171,7 +172,7 @@ export const IosSwiper = ({
 
   const emitCurrentId = slideId => {
     if (onChange) {
-      onChange({nativeEvent: {slideId}});
+      onChange({ nativeEvent: { slideId } });
     }
   };
 
@@ -183,14 +184,14 @@ export const IosSwiper = ({
   ]);
 
   const onLayout = e => {
-    const {width} = e.nativeEvent.layout;
+    const { width } = e.nativeEvent.layout;
     setWidth(width);
   };
 
   const onScroll = event => {
     const {
       nativeEvent: {
-        contentOffset: {x: scrollX},
+        contentOffset: { x: scrollX },
       },
     } = event;
 
@@ -218,7 +219,7 @@ export const IosSwiper = ({
     }
   };
 
-  const renderItem = ({item}) => {
+  const renderItem = ({ item }) => {
     return (
       <Slide
         style={imageWrapStyles}
@@ -228,15 +229,16 @@ export const IosSwiper = ({
         setScrollEnabled={setScrollEnabled}
         minScale={minScale}
         maxScale={maxScale}
+        hide={hideBeforeScroll}
       />
     );
   };
 
   const showList = Boolean(
     layoutReady &&
-      window.length &&
-      typeof innerId === 'string' &&
-      typeof initialIndex === 'number',
+    window.length &&
+    typeof innerId === 'string' &&
+    typeof initialIndex === 'number',
   );
 
   return (
