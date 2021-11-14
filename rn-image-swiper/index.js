@@ -1,6 +1,6 @@
 import React from 'react';
-import { requireNativeComponent, Platform, StyleSheet } from 'react-native';
-import { IosSwiper } from './ios-swiper';
+import {requireNativeComponent, Platform, StyleSheet} from 'react-native';
+import {IosSwiper} from './ios-swiper';
 
 /**
  * Composes `View`.
@@ -11,11 +11,11 @@ import { IosSwiper } from './ios-swiper';
  */
 
 const SwiperComp =
-  Platform === 'android' ? requireNativeComponent('RCTSwiper') : IosSwiper;
+  Platform.OS === 'android' ? requireNativeComponent('RCTSwiper') : IosSwiper;
 
 export const RnImageSwiper = props => {
   // TODO: я не уверен что сильно хорошая идея позволять устанавливать любые реактовские стили, поэтому пока не буду давать такой возможности
-  const { onChange, style, ...restProps } = props;
+  const {onChange, style, ...restProps} = props;
 
   const proxyClearEventVal = e => {
     if (props.onChange) {
