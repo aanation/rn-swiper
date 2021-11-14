@@ -113,6 +113,14 @@ class SwiperView @JvmOverloads constructor(
         }
     }
 
+    fun setMinScale(minScale: Double) {
+        adapter.setMinScale(minScale)
+    }
+
+    fun setMaxScale(maxScale: Double) {
+        adapter.setMaxScale(maxScale)
+    }
+
     private fun findPosById(id: String): Int? {
         val images = adapter.getImages()
         val curr = images.find { it.id == id } ?: return null

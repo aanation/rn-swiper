@@ -42,6 +42,21 @@ class ReactSwiperManager: SimpleViewManager<SwiperView>() {
             .build() as MutableMap<String, Any>
     }
 
+    @ReactProp(name = "minScale")
+    fun setMinScale(view: SwiperView, minScale: Double) {
+        if (minScale is Double) {
+            view.setMinScale(minScale.toDouble())
+        }
+    }
+
+    @ReactProp(name = "maxScale")
+    fun setMaxScale(view: SwiperView, maxScale: Double) {
+        if (maxScale is Double) {
+            view.setMaxScale(maxScale.toDouble())
+        }
+    }
+
+
     @ReactProp(name = "images")
     fun setSlides(view: SwiperView, imagesProp: ReadableArray) {
         val images = ArrayList<ImageData>()

@@ -5,55 +5,64 @@ import {
   StyleSheet,
   View,
   Image,
-  Dimensions
-} from "react-native"
-import { ReactNativeZoomableView } from '@dudigital/react-native-zoomable-view'
+  Dimensions,
+} from 'react-native';
+import {ReactNativeZoomableView} from '@dudigital/react-native-zoomable-view';
 
+const DEFAULT_MIN_SCALE = 0.6;
+const DEFAULT_MAX_SCALE = 8;
 
 const getWindow = (index, images) => {
   if (images.length < 3) {
-    return images
+    return images;
   }
 
   if (index === 0) {
-    return images.slice(0, 3)
+    return images.slice(0, 3);
   }
 
   if (index === images.length - 1) {
-    return images.slice(index - 2, index + 2)
+    return images.slice(index - 2, index + 2);
   }
 
-  return images.slice(index - 1, index + 2)
-}
+  return images.slice(index - 1, index + 2);
+};
 
+const calcWindow = ({images, currIndex}) => {
+  const window =
+    images.length && currIndex !== -1 ? getWindow(currIndex, images) : [];
+  return window;
+};
 
+const Slide = ({
+  style,
+  width,
+  uri,
+  scrollEnabled,
+  setScrollEnabled,
+  minScale,
+  maxScale,
+}) => {
+  const zoomableImage = React.useRef(null);
 
-const calcWindow = ({ images, currIndex }) => {
-  const window = images.length && currIndex !== -1 ? getWindow(currIndex, images) : []
-  return window
-}
-
-const Slide = ({ style, width, uri, scrollEnabled, setScrollEnabled }) => {
-  const zoomableImage = React.useRef(null)
-
-  const handleZoomChanges = (a, b, { zoomLevel }) => {
+  const handleZoomChanges = (a, b, {zoomLevel}) => {
     if (zoomLevel === 1 && !scrollEnabled) {
-      setScrollEnabled(true)
-      return
+      setScrollEnabled(true);
+      return;
     }
 
     if (zoomLevel > 1 && scrollEnabled) {
-      setScrollEnabled(false)
-      return
+      setScrollEnabled(false);
+      return;
     }
-  }
+  };
 
   return (
     <View style={style}>
       <ReactNativeZoomableView
         ref={zoomableImage}
-        maxZoom={1.5}
-        minZoom={1}
+        maxZoom={typeof maxScale === 'number' ? maxScale : DEFAULT_MAX_SCALE}
+        minZoom={typeof minScale === 'number' ? minScale : DEFAULT_MIN_SCALE}
         zoomStep={0.5}
         initialZoom={1}
         bindToBorders={true}
@@ -64,140 +73,152 @@ const Slide = ({ style, width, uri, scrollEnabled, setScrollEnabled }) => {
         onShiftingEnd={handleZoomChanges}
         onZoomBefore={handleZoomChanges}
         onZoomEnd={handleZoomChanges}
-      // onZoomAfter={this.logOutZoomState}
+        // onZoomAfter={this.logOutZoomState}
       >
-        <Image style={{ flex: 1, width, height: '100%' }}
+        <Image
+          style={{flex: 1, width, height: '100%'}}
           source={{
             uri,
           }}
-          resizeMode="contain" />
+          resizeMode="contain"
+        />
       </ReactNativeZoomableView>
     </View>
-  )
-}
+  );
+};
 
-export const IosSwiper = ({ onChange, images, currentId }) => {
-  const [width, setWidth] = React.useState(null)
-  const [innerId, setInnerId] = React.useState(currentId)
-  const [initialIndex, setInitialIndex] = React.useState()
-  const scrollToItemRef = React.useRef(null)
-  const imagesList = React.useRef(null)
-  const [scrollEnabled, setScrollEnabled] = React.useState(true)
-  const layoutReady = width !== null
-  const [_, forceUpdate] = React.useReducer((c) => c + 1, 0)
+export const IosSwiper = ({
+  onChange,
+  images,
+  currentId,
+  minScale = DEFAULT_MIN_SCALE,
+  maxScale = DEFAULT_MAX_SCALE,
+}) => {
+  const [width, setWidth] = React.useState(null);
+  const [innerId, setInnerId] = React.useState(currentId);
+  const [initialIndex, setInitialIndex] = React.useState();
+  const scrollToItemRef = React.useRef(null);
+  const imagesList = React.useRef(null);
+  const [scrollEnabled, setScrollEnabled] = React.useState(true);
+  const layoutReady = width !== null;
+  const [_, forceUpdate] = React.useReducer(c => c + 1, 0);
 
-  const currIndex = images.findIndex((i) => i.id === innerId)
-  const initialScrollIndex = typeof initialIndex === "number"
-    ? initialIndex
-    : currIndex !== -1 ? currIndex : undefined
+  const currIndex = images.findIndex(i => i.id === innerId);
+  const initialScrollIndex =
+    typeof initialIndex === 'number'
+      ? initialIndex
+      : currIndex !== -1
+      ? currIndex
+      : undefined;
 
   React.useEffect(() => {
-    if (typeof initialIndex !== "number" && typeof initialScrollIndex === "number") {
-      setInitialIndex(initialScrollIndex)
+    if (
+      typeof initialIndex !== 'number' &&
+      typeof initialScrollIndex === 'number'
+    ) {
+      setInitialIndex(initialScrollIndex);
     }
-  })
+  });
 
-
-
-  const window = calcWindow({ images, currIndex })
-  const scrollAfterRender = React.useCallback((p) => {
-    const item = p || scrollToItemRef.current
+  const window = calcWindow({images, currIndex});
+  const scrollAfterRender = React.useCallback(p => {
+    const item = p || scrollToItemRef.current;
     if (imagesList.current && item) {
       imagesList.current.scrollToItem({
         item,
         animated: false,
-      })
-      scrollToItemRef.current = null
+      });
+      scrollToItemRef.current = null;
     }
-  }, [])
+  }, []);
 
   React.useLayoutEffect(() => {
     setTimeout(() => {
-      scrollAfterRender()
-    }, 30)
-  }, [innerId])
+      scrollAfterRender();
+    }, 30);
+  }, [innerId]);
 
   React.useEffect(() => {
     // set initial id
     if (currentId && !innerId) {
-      setInnerId(currentId)
-      return
+      setInnerId(currentId);
+      return;
     }
 
-    // external id changed 
+    // external id changed
     if (currentId && innerId !== currentId) {
-      const inCurrWindow = window.some((i) => i.id === currentId)
-      const currItem = images.find((i) => i.id === currentId)
+      const inCurrWindow = window.some(i => i.id === currentId);
+      const currItem = images.find(i => i.id === currentId);
       if (inCurrWindow) {
-        scrollAfterRender(currItem)
+        scrollAfterRender(currItem);
       } else {
-        scrollToItemRef.current = currItem
+        scrollToItemRef.current = currItem;
         /*
         setTimeout(() => {
           scrollAfterRender(currItem)
         }, 200)
         */
       }
-      setInnerId(currentId)
-      return
+      setInnerId(currentId);
+      return;
     }
 
     // init inner id
     if (!innerId && images.length) {
-      setInnerId(images[0].id)
+      setInnerId(images[0].id);
     }
-  }, [currentId, innerId, images, window])
+  }, [currentId, innerId, images, window]);
 
-
-  const emitCurrentId = (slideId) => {
+  const emitCurrentId = slideId => {
     if (onChange) {
-      onChange({ nativeEvent: { slideId } })
+      onChange({nativeEvent: {slideId}});
     }
-  }
+  };
 
+  const imageWrapStyles = StyleSheet.flatten([
+    styles.imageWrap,
+    {
+      width,
+    },
+  ]);
 
-  const imageWrapStyles = StyleSheet.flatten([styles.imageWrap, {
-    width,
-  }])
+  const onLayout = e => {
+    const {width} = e.nativeEvent.layout;
+    setWidth(width);
+  };
 
-  const onLayout = (e) => {
-    const { width } = e.nativeEvent.layout
-    setWidth(width)
-  }
-
-  const onScroll = (event) => {
+  const onScroll = event => {
     const {
       nativeEvent: {
-        contentOffset: { x: scrollX },
+        contentOffset: {x: scrollX},
       },
-    } = event
+    } = event;
 
-    const nextIndex = Math.round(scrollX / width)
-    const nextId = window[nextIndex].id
+    const nextIndex = Math.round(scrollX / width);
+    const nextId = window[nextIndex].id;
 
     if (innerId !== nextId) {
-      setInnerId(nextId)
+      setInnerId(nextId);
     }
 
     if (nextId !== currentId) {
-      emitCurrentId(nextId)
+      emitCurrentId(nextId);
     }
-  }
+  };
 
   const lockScroll = () => {
     if (scrollEnabled) {
-      setScrollEnabled(false)
+      setScrollEnabled(false);
     }
-  }
+  };
 
   const unlockScroll = () => {
     if (!scrollEnabled) {
-      setScrollEnabled(true)
+      setScrollEnabled(true);
     }
-  }
+  };
 
-
-  const renderItem = ({ item }) => {
+  const renderItem = ({item}) => {
     return (
       <Slide
         style={imageWrapStyles}
@@ -205,16 +226,18 @@ export const IosSwiper = ({ onChange, images, currentId }) => {
         uri={item.src}
         scrollEnabled={scrollEnabled}
         setScrollEnabled={setScrollEnabled}
+        minScale={minScale}
+        maxScale={maxScale}
       />
-    )
-  }
+    );
+  };
 
   const showList = Boolean(
     layoutReady &&
-    window.length &&
-    typeof innerId === "string" &&
-    typeof initialIndex === "number"
-  )
+      window.length &&
+      typeof innerId === 'string' &&
+      typeof initialIndex === 'number',
+  );
 
   return (
     <View style={styles.sliderWrap} onLayout={onLayout}>
@@ -239,7 +262,7 @@ export const IosSwiper = ({ onChange, images, currentId }) => {
           })}
           renderItem={renderItem}
           // onMomentumScrollEnd={onScroll}
-          keyExtractor={(item) => item.id}
+          keyExtractor={item => item.id}
           maintainVisibleContentPosition={{
             minIndexForVisible: 0,
             autoscrollToTopThreshold: -999,
@@ -248,9 +271,8 @@ export const IosSwiper = ({ onChange, images, currentId }) => {
         />
       )}
     </View>
-  )
+  );
 };
-
 
 const styles = StyleSheet.create({
   sliderWrap: {
@@ -265,5 +287,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
-  }
+  },
 });
