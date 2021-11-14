@@ -55,7 +55,7 @@ const getRandImageSrc = () => images[Math.floor(Math.random() * images.length)]
 const createImage = ({ width, height }) => {
   return {
     id: randomString(10),
-    src: getRandImageSrc(),
+    src: `https://picsum.photos/${width}/${height}?t=${randomString(10)}`,
   };
 };
 
@@ -68,11 +68,11 @@ const createImages = ({ count, width, height }) => {
 };
 
 const initImages = (() => {
-  return createImages({ count: 1, width: 600, height: 800 });
+  return createImages({ count: 4, width: 200, height: 800 });
 })();
 
 const App: () => Node = () => {
-  const [images, setImages] = React.useState([]);
+  const [images, setImages] = React.useState(initImages);
   const [currentId, setCurrentId] = React.useState(undefined);
 
   const isDarkMode = useColorScheme() === 'dark';
@@ -82,7 +82,7 @@ const App: () => Node = () => {
   };
 
   const addToStart = () => {
-    const newImages = createImages({ count: 1, width: 300, height: 900 });
+    const newImages = createImages({ count: 5, width: 300, height: 900 });
     const updated = [...newImages, ...images]
     setImages(updated);
     if (!currentId) {
@@ -90,16 +90,8 @@ const App: () => Node = () => {
     }
   };
 
-  /*
-  React.useEffect(() => {
-    setTimeout(() => {
-      addToStart()
-    }, 3000)
-  }, [])
-  */
-
   const addToEnd = () => {
-    const newImages = createImages({ count: 1, width: 1000, height: 800 });
+    const newImages = createImages({ count: 5, width: 1000, height: 800 });
     setImages([...images, ...newImages]);
   };
 
@@ -164,7 +156,7 @@ const styles = StyleSheet.create({
   },
   sliderWrap: {
     width: '100%',
-    height: 700,
+    height: 400,
     backgroundColor: 'red',
   },
   sectionDescription: {

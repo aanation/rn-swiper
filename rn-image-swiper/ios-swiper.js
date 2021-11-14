@@ -5,7 +5,10 @@ import {
   StyleSheet,
   View,
   Image,
+  Dimensions
 } from "react-native"
+import { ReactNativeZoomableView } from '@dudigital/react-native-zoomable-view'
+
 
 const getWindow = (index, images) => {
   if (images.length < 3) {
@@ -25,32 +28,63 @@ const getWindow = (index, images) => {
 
 
 
-const calcWindow = ({ images, currIndex, pendingId }) => {
+const calcWindow = ({ images, currIndex }) => {
   const window = images.length && currIndex !== -1 ? getWindow(currIndex, images) : []
-  const windowHasPendingId = window.some((i) => {
-    return i.id === pendingId
-  })
-  if (!pendingId || windowHasPendingId) return window
+  return window
+}
 
-  // дополняем window элементом к которому хотим проскролить 
-  const pendingIndex = images.findIndex((i) => i.id === pendingId)
-  const pendingImage = images[pendingIndex]
+const Slide = ({ style, width, uri, scrollEnabled, setScrollEnabled }) => {
+  const zoomableImage = React.useRef(null)
 
-  if (pendingId > currIndex) {
-    return [...window, pendingImage]
+  const handleZoomChanges = (a, b, { zoomLevel }) => {
+    if (zoomLevel === 1 && !scrollEnabled) {
+      setScrollEnabled(true)
+      return
+    }
+
+    if (zoomLevel > 1 && scrollEnabled) {
+      setScrollEnabled(false)
+      return
+    }
   }
 
-  return [pendingImage, ...window]
+  return (
+    <View style={style}>
+      <ReactNativeZoomableView
+        ref={zoomableImage}
+        maxZoom={1.5}
+        minZoom={1}
+        zoomStep={0.5}
+        initialZoom={1}
+        bindToBorders={true}
+        captureEvent={true}
+        onDoubleTapBefore={handleZoomChanges}
+        onDoubleTapAfter={handleZoomChanges}
+        onShiftingBefore={handleZoomChanges}
+        onShiftingEnd={handleZoomChanges}
+        onZoomBefore={handleZoomChanges}
+        onZoomEnd={handleZoomChanges}
+      // onZoomAfter={this.logOutZoomState}
+      >
+        <Image style={{ flex: 1, width, height: '100%' }}
+          source={{
+            uri,
+          }}
+          resizeMode="contain" />
+      </ReactNativeZoomableView>
+    </View>
+  )
 }
 
 export const IosSwiper = ({ onChange, images, currentId }) => {
   const [width, setWidth] = React.useState(null)
   const [innerId, setInnerId] = React.useState(currentId)
   const [initialIndex, setInitialIndex] = React.useState()
-  const [pendingId, setPendingId] = React.useState(null)
-  const [clearPendingId, setClearPendingId] = React.useState(false)
+  const scrollToItemRef = React.useRef(null)
   const imagesList = React.useRef(null)
+  const [scrollEnabled, setScrollEnabled] = React.useState(true)
   const layoutReady = width !== null
+  const [_, forceUpdate] = React.useReducer((c) => c + 1, 0)
 
   const currIndex = images.findIndex((i) => i.id === innerId)
   const initialScrollIndex = typeof initialIndex === "number"
@@ -63,27 +97,17 @@ export const IosSwiper = ({ onChange, images, currentId }) => {
     }
   })
 
-  const window = calcWindow({ images, currIndex, pendingId })
-
-  React.useEffect(() => {
-    const pendingIndex = window.findIndex((i) => i.id === pendingId)
-    if (pendingIndex !== -1 && imagesList.current) {
-      console.log(`scroll to index ${pendingIndex}`)
-      imagesList.current.scrollToIndex({
-        index: pendingIndex,
+  const window = calcWindow({ images, currIndex })
+  const scrollAfterRender = React.useCallback((p) => {
+    const item = p || scrollToItemRef.current
+    if (imagesList.current && item) {
+      imagesList.current.scrollToItem({
+        item,
         animated: false,
       })
-      setClearPendingId(true)
+      scrollToItemRef.current = null
     }
-  }, [window, pendingId, innerId])
-
-  React.useEffect(() => {
-    if (clearPendingId) {
-      setInnerId(pendingId)
-      setPendingId(null)
-      setClearPendingId(false)
-    }
-  }, [clearPendingId, pendingId])
+  }, [])
 
   React.useEffect(() => {
     // set initial id
@@ -94,7 +118,14 @@ export const IosSwiper = ({ onChange, images, currentId }) => {
 
     // external id changed 
     if (currentId && innerId !== currentId) {
-      setPendingId(currentId)
+      const inCurrWindow = window.some((i) => i.id === currentId)
+      const currItem = images.find((i) => i.id === currentId)
+      if (inCurrWindow) {
+        scrollAfterRender(currItem)
+      } else {
+        scrollToItemRef.current = currItem
+      }
+      setInnerId(currentId)
       return
     }
 
@@ -102,15 +133,8 @@ export const IosSwiper = ({ onChange, images, currentId }) => {
     if (!innerId && images.length) {
       setInnerId(images[0].id)
     }
-  }, [currentId, innerId, images])
+  }, [currentId, innerId, images, window])
 
-  React.useEffect(() => {
-    const innerIdNotFound = !images.some((i) => i.id === currentId)
-    if (innerIdNotFound && images.length) {
-      setInnerId(images[0].id)
-      emitCurrentId(images[0].id)
-    }
-  }, [images, innerId])
 
   const emitCurrentId = (slideId) => {
     if (onChange) {
@@ -147,17 +171,28 @@ export const IosSwiper = ({ onChange, images, currentId }) => {
     }
   }
 
+  const lockScroll = () => {
+    if (scrollEnabled) {
+      setScrollEnabled(false)
+    }
+  }
+
+  const unlockScroll = () => {
+    if (!scrollEnabled) {
+      setScrollEnabled(true)
+    }
+  }
+
 
   const renderItem = ({ item }) => {
     return (
-      <View style={imageWrapStyles}>
-        <Image
-          style={{ width, height: 200 }}
-          source={{
-            uri: item.src,
-          }}
-        />
-      </View>
+      <Slide
+        style={imageWrapStyles}
+        width={width}
+        uri={item.src}
+        scrollEnabled={scrollEnabled}
+        setScrollEnabled={setScrollEnabled}
+      />
     )
   }
 
@@ -176,12 +211,14 @@ export const IosSwiper = ({ onChange, images, currentId }) => {
           data={window}
           horizontal
           pagingEnabled
+          scrollEnabled={scrollEnabled}
           // initialScrollIndex={initialSlideIndex}
           showsHorizontalScrollIndicator={false}
           showsVerticalScrollIndicator={false}
           initialScrollIndex={initialScrollIndex}
           // getItem={(_, index) => images[index]}
           // getItemCount={() => images.length}
+          onViewableItemsChanged={scrollAfterRender}
           getItemLayout={(_, index) => ({
             length: width,
             offset: width * index,
@@ -211,9 +248,9 @@ const styles = StyleSheet.create({
   imageWrap: {
     width: '100%',
     height: '100%',
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
-    backgroundColor: 'green'
   }
 });
